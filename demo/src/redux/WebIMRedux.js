@@ -42,7 +42,7 @@ WebIM.conn.listen({
         store.dispatch(MessageActions.initUnread())
 
         // presence to be online and receive message
-        WebIM.conn.setPresence()
+        // WebIM.conn.setPresence()
     
         // get roster
         store.dispatch(RosterActions.getContacts())

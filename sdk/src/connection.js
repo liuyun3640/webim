@@ -1,12 +1,39 @@
 var _version = '1.4.13';
+// import all from "./all";
+// import protobuf from "protobufjs";
+
+// import SockJS from "sockjs-client";
+var all = require('./all');
+var protobuf = require('protobufjs');
+var SockJS = require('sockjs-client');
+
 var _code = require('./status').code; 
 var _utils = require('./utils').utils; 
 var _msg = require('./message');
 var _message = _msg._msg;
 var _msgHash = {};
 var Queue = require('./queue').Queue;
+var sendChatMessage = require('./sendMessage/sendChatMessage').sendChatMessage;
 var CryptoJS = require('crypto-js');
 var _ = require('underscore');
+
+var Long = require("long");
+protobuf.util.Long = Long;
+protobuf.configure();
+var sock;
+
+
+
+var root = protobuf.Root.fromJSON(all);
+// var sock = new SockJS('http://39.107.157.123:8280/ws');
+
+// sock.onopen = function (a,b,c) {
+//     console.log(a,111);
+//     console.log(b,22);
+//     console.log(c,33);
+//     console.log("open");
+//     connection.onOpened();
+// };
 
 var Strophe = window.Strophe
 var isStropheLog;
@@ -27,29 +54,29 @@ if (window.XDomainRequest) {
     // };
 }
 
-Strophe.Request.prototype._newXHR = function () {
-    var xhr = _utils.xmlrequest(true);
-    if (xhr.overrideMimeType) {
-        xhr.overrideMimeType('text/xml');
-    }
-    // use Function.bind() to prepend ourselves as an argument
-    xhr.onreadystatechange = this.func.bind(null, this);
-    return xhr;
-};
+// Strophe.Request.prototype._newXHR = function () {
+//     var xhr = _utils.xmlrequest(true);
+//     if (xhr.overrideMimeType) {
+//         xhr.overrideMimeType('text/xml');
+//     }
+//     // use Function.bind() to prepend ourselves as an argument
+//     xhr.onreadystatechange = this.func.bind(null, this);
+//     return xhr;
+// };
 
-Strophe.Websocket.prototype._closeSocket = function () {
-    if (this.socket) {
-        var me = this;
-        setTimeout(function () {
-            try {
-                me.socket.close();
-            } catch (e) {
-            }
-        }, 0);
-    } else {
-        this.socket = null;
-    }
-};
+// Strophe.Websocket.prototype._closeSocket = function () {
+//     if (this.socket) {
+//         var me = this;
+//         setTimeout(function () {
+//             try {
+//                 me.socket.close();
+//             } catch (e) {
+//             }
+//         }, 0);
+//     } else {
+//         this.socket = null;
+//     }
+// };
 
 /** Function: log
  *  User overrideable logging function.
@@ -81,29 +108,29 @@ Strophe.Websocket.prototype._closeSocket = function () {
  *    (String) msg - The log message.
  */
 /* jshint ignore:start */
-Strophe.log =  function (level, msg) {
-    if(!isStropheLog){
-        return
-    }
-    switch(level){
-        case this.LogLevel.DEBUG:
-            console.debug(msg)
-            break;
-        case this.LogLevel.INFO:
-            console.info(msg);
-            break;
-        case this.LogLevel.WARN:
-            console.warn(msg);
-            break;
-        case this.LogLevel.ERROR:
-        case this.LogLevel.FATAL:
-            console.error(msg);
-            break;
-        default:
-            console.log(msg);
-    }
-    return;
-}
+// Strophe.log =  function (level, msg) {
+//     if(!isStropheLog){
+//         return
+//     }
+//     switch(level){
+//         case this.LogLevel.DEBUG:
+//             console.debug(msg)
+//             break;
+//         case this.LogLevel.INFO:
+//             console.info(msg);
+//             break;
+//         case this.LogLevel.WARN:
+//             console.warn(msg);
+//             break;
+//         case this.LogLevel.ERROR:
+//         case this.LogLevel.FATAL:
+//             console.error(msg);
+//             break;
+//         default:
+//             console.log(msg);
+//     }
+//     return;
+// }
 
 /**
  *
@@ -254,7 +281,7 @@ var _parseRoomOccupants = function (result) {
     return occupants;
 };
 
-var _parseResponseMessage = function (msginfo) {
+var _parseResponseMessage = function (msginfo) {    //****
     var parseMsgData = {errorMsg: true, data: []};
 
     var msgBodies = msginfo.getElementsByTagName('body');
@@ -317,7 +344,7 @@ var _parseNameFromJidFn = function (jid, domain) {
     return tempstr;
 };
 
-var _parseFriend = function (queryTag, conn, from) {
+var _parseFriend = function (queryTag, conn, from) {  //****
     var rouster = [];
     var items = queryTag.getElementsByTagName('item');
     if (items) {
@@ -372,6 +399,98 @@ var _login = function (options, conn) {
     if(!options){
         return;
     }
+    sock = new SockJS('http://39.107.157.123:8280/ws');
+
+    sock.onopen = function (a,b,c) {
+        console.log(a,111);
+        console.log(b,22);
+        console.log(c,33);
+        console.log("open");
+        var emptyMessage = [];
+
+        var provisionMessage = root.lookup("easemob.pb.Provision");
+        var secondMessage = provisionMessage.decode(emptyMessage);
+
+        secondMessage.compressType = conn.compressType;
+        secondMessage.encryptType = conn.encryptType;
+        secondMessage.osType = conn.osType;
+        secondMessage.version = conn.version;
+        secondMessage.deviceName = "websdk";
+        secondMessage.resource = (new Date()).valueOf();
+        secondMessage.auth = "$t$" + options.access_token;
+        secondMessage = provisionMessage.encode(secondMessage).finish();
+        var firstLookUpMessage = root.lookup("easemob.pb.MSync");
+        var firstMessage = firstLookUpMessage.decode(emptyMessage);
+
+        firstMessage.version = conn.version;
+        firstMessage.guid = conn.context.jid;
+        firstMessage.auth = "$t$" + options.access_token;
+        firstMessage.command = 3;
+        firstMessage.deviceId = conn.deviceId;
+        firstMessage.encryptType = conn.encryptType;
+        firstMessage.payload = secondMessage;
+        //  console.log(JSON.stringify(conn.jid));
+        // console.log(JSON.stringify(firstMessage));
+        firstMessage = firstLookUpMessage.encode(firstMessage).finish();
+        // console.log(JSON.stringify(firstMessage));
+        var result = firstLookUpMessage.decode(firstMessage);
+        //console.log(JSON.stringify(result));
+        base64transform(firstMessage);
+        conn.onOpened();
+    };
+
+    sock.onclose = function () {
+        console.log("close");
+    };
+
+    sock.onmessage = function (e) {
+        console.log("返回消息" + e.data);
+        var getmessage = window.atob(e.data);
+
+        var arr = [];
+        for (var i = 0, j = getmessage.length; i < j; ++i) {
+            arr.push(getmessage.charCodeAt(i));
+        }
+        var tmpUint8Array = new Uint8Array(arr);    //注释：ie9不兼容https://www.cnblogs.com/jiangxiaobo/p/6016431.html
+
+        var mainMessage = root.lookup("easemob.pb.MSync");
+        var result = mainMessage.decode(tmpUint8Array);
+        switch (result.command) {
+            case 0:
+                var CommSyncDLMessage = root.lookup("easemob.pb.CommSyncDL");
+                CommSyncDLMessage = CommSyncDLMessage.decode(result.payload);
+                console.log(CommSyncDLMessage);
+                if (CommSyncDLMessage.metas.length !== 0) {
+                    if (CommSyncDLMessage.metas[0].ns === 1) {
+                        metapayload(CommSyncDLMessage.metas);
+                        lastsession(CommSyncDLMessage.nextKey, CommSyncDLMessage.queue);
+                    }
+                }
+                break;
+            case 1:
+                var CommUnreadDLMessage = root.lookup("easemob.pb.CommUnreadDL");
+                CommUnreadDLMessage = CommUnreadDLMessage.decode(result.payload);
+                if (CommUnreadDLMessage.unread.length === 0) {
+                    rebuild();   //????感觉没卵用
+                }
+                else {
+                    for (var i = 0; i < CommUnreadDLMessage.unread.length; i++) {
+                        backqueue(CommUnreadDLMessage.unread[i].queue);
+                    }
+                }
+                break;
+            case 2:
+                var Message = root.lookup("easemob.pb.CommNotice");
+                var noticeMessage = Message.decode(result.payload);
+                // console.log(noticeMessage.queue);
+                backqueue(noticeMessage.queue);
+                break;
+            case 3:
+                receiveProvision(result);
+                break;
+        }
+
+    };
     var accessToken = options.access_token || '';
     if (accessToken == '') {
         var loginfo = _utils.stringify(options);
@@ -381,29 +500,171 @@ var _login = function (options, conn) {
         });
         return;
     }
-    conn.context.accessToken = options.access_token;
-    conn.context.accessTokenExpires = options.expires_in;
-    if (conn.isOpening() && conn.context.stropheConn) {
-        stropheConn = conn.getStrophe();
-    } else if (conn.isOpened() && conn.context.stropheConn) {
-        // return;
-        stropheConn = conn.getStrophe();
-    } else {
-        stropheConn = conn.getStrophe();
-    }
-    var callback = function (status, msg) {
-        _loginCallback(status, msg, conn);
-    };
 
-    conn.context.stropheConn = stropheConn;
-    if (conn.route) {
-        stropheConn.connect(conn.context.jid, '$t$' + accessToken, callback, conn.wait, conn.hold, conn.route);
-    } else {
-        stropheConn.connect(conn.context.jid, '$t$' + accessToken, callback, conn.wait, conn.hold);
-    }
+    conn.context.accessToken = options.access_token;
 };
 
-var _parseMessageType = function (msginfo) {
+
+/**
+ * 确定收到消息给erlang反馈
+ * */
+var lastsession = function (nexkey, queue) {
+
+    console.log("队列");
+    console.log(queue);
+    var emptyMessage = [];
+    var commSyncULMessage = root.lookup("easemob.pb.CommSyncUL");
+    var secondMessage = commSyncULMessage.decode(emptyMessage);
+    secondMessage.queue = queue;
+    secondMessage.key = nexkey;
+    secondMessage = commSyncULMessage.encode(secondMessage).finish();
+
+    var mSyncMessage = root.lookup("easemob.pb.MSync");
+
+    var firstMessage = mSyncMessage.decode(emptyMessage);
+    firstMessage.version = "web1.0";
+    firstMessage.encryptType = [0];
+    firstMessage.command = 0;
+    firstMessage.payload = secondMessage;
+    firstMessage = mSyncMessage.encode(firstMessage).finish();
+
+
+    if (sock.readyState !== SockJS.OPEN) {
+        console.log("这里出错");
+    } else {
+
+        base64transform(firstMessage);
+    }
+}
+
+var metapayload = function (meta) {
+    for (var i = 0; i < meta.length; i++) {
+        messageBody(meta[i].payload);
+    }
+}
+
+var messageBody = function (messagebody) {
+
+    var messageBodyMessage = root.lookup("easemob.pb.MessageBody");
+    var thirdMessage = messageBodyMessage.decode(messagebody);
+    var type = null;
+    if (thirdMessage.type === 1) {
+        type = "chat";
+    }
+    else if (thirdMessage.type === 2) {
+        type = "groupchat";
+    }
+    else if (thirdMessage.type === 3) {
+        type = "chatroom";
+    }
+    for (var i = 0; i < thirdMessage.contents.length; i++) {
+
+        var msg = {
+            id: window.this.user,
+            type: type,
+            form: thirdMessage.from.name,
+            to: thirdMessage.to.name,
+            data: thirdMessage.contents[i].text,
+            ext: thirdMessage.ext,
+            sourceMsg: thirdMessage.contents[i].text
+        }
+        msg.error = "";
+        msg.errorText = "";
+        msg.errorCode = "";
+        window.this.onTextMessage(msg);
+    }
+}
+
+
+/**
+ *
+ * 如何没有未读消息的处理
+ * */
+var rebuild = function () {
+
+    var emptyMessage = [];
+    //再次发送信息
+    var StatisticsMessage = root.lookup("easemob.pb.StatisticsBody");
+    var fourthMessage = StatisticsMessage.decode(emptyMessage);
+    //console.log(statisticsmessage);
+    fourthMessage.operation = 0;
+    // statisticsmessage.imTime=123;
+    // statisticsmessage.chatTime=123;
+    fourthMessage = StatisticsMessage.encode(fourthMessage).finish();
+
+    var MetaMessage = root.lookup("easemob.pb.Meta");
+    var thirdMessage = MetaMessage.decode(emptyMessage);
+    thirdMessage.id = (new Date()).valueOf();
+    thirdMessage.ns = 0;
+    thirdMessage.payload = fourthMessage;
+    // metamessage = MetaMessage.encode(metamessage).finish();
+    var commsynculMessage = root.lookup("easemob.pb.CommSyncUL");
+    var secondMessage = commsynculMessage.decode(emptyMessage);
+    secondMessage.meta = thirdMessage;
+    secondMessage = commsynculMessage.encode(secondMessage).finish();
+
+    var mainMessage = root.lookup("easemob.pb.MSync");
+    var firstMessage = mainMessage.decode(emptyMessage);
+    firstMessage.version = "web1.0";
+    firstMessage.encryptType = [0];
+    firstMessage.command = 0;
+    firstMessage.payload = secondMessage;
+    firstMessage = mainMessage.encode(firstMessage).finish();
+    base64transform(firstMessage);
+}
+
+/**
+ * 当服务器有新消息提示时进行返回queue
+ * */
+var backqueue = function (backqueue) {
+    var emptyMessage = [];
+    var commsynculMessage = root.lookup("easemob.pb.CommSyncUL");
+    var secondMessage = commsynculMessage.decode(emptyMessage);
+    secondMessage.queue = backqueue;
+    secondMessage = commsynculMessage.encode(secondMessage).finish();
+    var mainMessage = root.lookup("easemob.pb.MSync");
+    var firstMessage = mainMessage.decode(emptyMessage);
+    firstMessage.version = "web1.0";
+    firstMessage.encryptType = [0];
+    firstMessage.command = 0;
+    firstMessage.payload = secondMessage;
+    firstMessage = mainMessage.encode(firstMessage).finish();
+    base64transform(firstMessage);
+}
+
+var receiveProvision = function (result) {
+    var provisionMessage = root.lookup("easemob.pb.Provision");
+    var receiveProvisionResult = provisionMessage.decode(result.payload);
+
+    if (receiveProvisionResult.status.errorCode == 0) {
+        unreadDeal();
+    }
+}
+
+var unreadDeal = function () {
+    var emptyMessage = [];
+    var MSyncMessage = root.lookup("easemob.pb.MSync");
+    var firstMessage = MSyncMessage.decode(emptyMessage);
+    firstMessage.version = "web1.0";
+    firstMessage.encryptType = [0];
+    firstMessage.command = 1;
+    firstMessage = MSyncMessage.encode(firstMessage).finish();
+    base64transform(firstMessage);
+}
+
+var base64transform = function (str) {
+
+    var strr = "";
+    for (var i = 0; i < str.length; i++) {
+        var str0 = String.fromCharCode(str[i]);
+        strr = strr + str0;
+    }
+    strr = window.btoa(strr);
+    console.log("转码发送" + strr);
+    sock.send(strr);
+}
+
+var _parseMessageType = function (msginfo) {   //*****
     var receiveinfo = msginfo.getElementsByTagName('received'),
         inviteinfo = msginfo.getElementsByTagName('invite'),
         deliveryinfo = msginfo.getElementsByTagName('delivery'),
@@ -685,14 +946,23 @@ var _validCheck = function (options, conn) {
         return false;
     }
 
-    var jid = appKey + '_' + user.toLowerCase() + '@' + conn.domain,
-        resource = options.resource || 'webim';
+    // var jid = appKey + '_' + user.toLowerCase() + '@' + conn.domain,
+    //     resource = options.resource || 'webim';
 
-    if (conn.isMultiLoginSessions) {
-        resource += user + new Date().getTime() + Math.floor(Math.random().toFixed(6) * 1000000);
-    }
-    conn.context.jid = jid + '/' + resource;
+    // if (conn.isMultiLoginSessions) {
+    //     resource += user + new Date().getTime() + Math.floor(Math.random().toFixed(6) * 1000000);
+    // }
+    // conn.context.jid = jid + '/' + resource;
     /*jid: {appkey}_{username}@domain/resource*/
+
+    conn.context.jid = {
+        appKey: appKey,
+        name: user,
+        domain: conn.domain,
+        clientResource: conn.clientResource
+    }
+    // conn.context.sock = sock;
+    conn.context.root = root;
     conn.context.userId = user;
     conn.context.appKey = appKey;
     conn.context.appName = appName;
@@ -764,7 +1034,7 @@ var connection = function (options) {
     this.url = _getXmppUrl(options.url, this.https);
     this.hold = options.hold || 1;
     this.route = options.route || null;
-    this.domain = options.domain || 'easemob.com';
+    // this.domain = options.domain || 'easemob.com';
     this.inactivity = options.inactivity || 30;
     this.heartBeatWait = options.heartBeatWait || 4500;
     this.maxRetries = options.maxRetries || 5;
@@ -781,6 +1051,12 @@ var connection = function (options) {
     this.isWindowSDK = options.isWindowSDK || false;
     this.encrypt = options.encrypt || {encrypt: {type: 'none'}};
     this.delivery = options.delivery || false;
+
+
+    //jid 所用参数
+    this.appKey = options.appKey || "easemob-demo#chatdemoui";
+    this.domain = options.domain || "easemob.com";
+    this.clientResource = "84ff3eba1";
     this.user = '';
     this.orgName = '';
     this.appName = '';
@@ -798,6 +1074,22 @@ var connection = function (options) {
     this.xmppTotal = 0;    //max number of creating xmpp server connection(ws/bosh) retries
 
     this.groupOption = {};
+    //mysnc配置
+    this.version = options.version || 0;
+    this.compressAlgorimth = options.compressAlgorimth || 0;
+    this.userAgent = options.userAgent || 0;
+    this.pov = options.pov || 0;
+    this.command = options.command || 3;
+    this.deviceId = options.deviceId || 0;
+    this.encryptType = options.encryptType || [];
+    this.encryptKey = options.encryptKey || "";
+    this.firstPayload = options.firstPayload || [];
+    this.compressType = options.compressType || [0];
+    this.encryptType = options.encryptType || [0];
+    this.osType = 16;
+    this.version = "web1.0";
+    window.this = this;
+
     
     // global params
     isStropheLog = options.isStropheLog || false;
@@ -1275,15 +1567,15 @@ connection.prototype.open = function (options) {
     if (options.accessToken) {
         this.token = options.accessToken;
     }
-    if (options.xmppURL) {
-        this.url = _getXmppUrl(options.xmppURL, this.https);
-    }
-    if (location.protocol != 'https:' && this.isHttpDNS) {
-        this.dnsIndex = 0;
-        this.getHttpDNS(options, 'login');
-    } else {
+    // if (options.xmppURL) {
+    //     this.url = _getXmppUrl(options.xmppURL, this.https);
+    // }
+    // if (location.protocol != 'https:' && this.isHttpDNS) {
+    //     this.dnsIndex = 0;
+    //     this.getHttpDNS(options, 'login');
+    // } else {
         this.login(options);
-    }
+    // }
 };
 
 /**
@@ -1308,7 +1600,7 @@ connection.prototype.login = function (options) {
 
     if (options.accessToken) {
         options.access_token = options.accessToken;
-        conn.context.restTokenData = options;
+        // conn.context.restTokenData = options;
         _login(options, conn);
     } else {
         var apiUrl = options.apiUrl;
@@ -1318,8 +1610,8 @@ connection.prototype.login = function (options) {
         var orgName = this.context.orgName;
 
         var suc = function (data, xhr) {
-            conn.context.status = _code.STATUS_DOLOGIN_IM;
-            conn.context.restTokenData = data;
+            // conn.context.status = _code.STATUS_DOLOGIN_IM;
+            // conn.context.restTokenData = data;
             if (options.success)
                 options.success(data);
             conn.token = data.access_token;
@@ -1328,30 +1620,30 @@ connection.prototype.login = function (options) {
         var error = function (res, xhr, msg) {
             if (options.error)
                 options.error();
-            if (location.protocol != 'https:' && conn.isHttpDNS) {
-                if ((conn.restIndex + 1) < conn.restTotal) {
-                    conn.restIndex++;
-                    conn.getRestFromHttpDNS(options, 'login');
-                    return;
-                }
-            }
-            conn.clear();
-            if (res.error && res.error_description) {
-                conn.onError({
-                    type: _code.WEBIM_CONNCTION_OPEN_USERGRID_ERROR,
-                    data: res,
-                    xhr: xhr
-                });
-            } else {
-                conn.onError({
-                    type: _code.WEBIM_CONNCTION_OPEN_ERROR,
-                    data: res,
-                    xhr: xhr
-                });
-            }
+            // if (location.protocol != 'https:' && conn.isHttpDNS) {
+            //     if ((conn.restIndex + 1) < conn.restTotal) {
+            //         conn.restIndex++;
+            //         conn.getRestFromHttpDNS(options, 'login');
+            //         return;
+            //     }
+            // }
+            // conn.clear();
+            // if (res.error && res.error_description) {
+            //     conn.onError({
+            //         type: _code.WEBIM_CONNCTION_OPEN_USERGRID_ERROR,
+            //         data: res,
+            //         xhr: xhr
+            //     });
+            // } else {
+            //     conn.onError({
+            //         type: _code.WEBIM_CONNCTION_OPEN_ERROR,
+            //         data: res,
+            //         xhr: xhr
+            //     });
+            // }
         };
 
-        this.context.status = _code.STATUS_DOLOGIN_USERGRID;
+        // this.context.status = _code.STATUS_DOLOGIN_USERGRID;
 
         var loginJson = {
             grant_type: 'password',
@@ -1782,7 +2074,7 @@ connection.prototype.handleIqRoster = function (e) {
 /**
  * @private
  */
-connection.prototype.handleMessage = function (msginfo) {
+connection.prototype.handleMessage = function (msginfo) {    //****
     var self = this;
     if (this.isClosed()) {
         return;
@@ -2068,7 +2360,7 @@ connection.prototype.handleMessage = function (msginfo) {
 /**
  * @private
  */
-connection.prototype.handleDeliveredMessage = function (message) {
+connection.prototype.handleDeliveredMessage = function (message) {  //****
     var id = message.id;
     var body = message.getElementsByTagName('body');
     var mid = 0;
@@ -2085,7 +2377,7 @@ connection.prototype.handleDeliveredMessage = function (message) {
 /**
  * @private
  */
-connection.prototype.handleAckedMessage = function (message) {
+connection.prototype.handleAckedMessage = function (message) {  //****
     var id = message.id;
     var body = message.getElementsByTagName('body');
     var mid = 0;
@@ -2102,7 +2394,7 @@ connection.prototype.handleAckedMessage = function (message) {
 /**
  * @private
  */
-connection.prototype.handleReceivedMessage = function (message) {
+connection.prototype.handleReceivedMessage = function (message) {  //****
     try {
         var received = message.getElementsByTagName("received");
         var mid = received[0].getAttribute('mid');
@@ -2149,7 +2441,7 @@ connection.prototype.handleReceivedMessage = function (message) {
 /**
  * @private
  */
-connection.prototype.handleInviteMessage = function (message) {
+connection.prototype.handleInviteMessage = function (message) {  //****
     var form = null;
     var invitemsg = message.getElementsByTagName('invite');
     var reasonDom = message.getElementsByTagName('reason')[0];
@@ -2184,7 +2476,7 @@ connection.prototype.handleInviteMessage = function (message) {
 /**
  * @private
  */
-connection.prototype.handleMutedMessage = function (message) {
+connection.prototype.handleMutedMessage = function (message) {  //****
     var id = message.id;
     this.onMutedMessage({
         mid: id
@@ -2234,7 +2526,7 @@ connection.prototype.getUniqueId = function (prefix) {
 };
 
 /**
- * 发送消息
+ * 发送消息旧
  * @param {Object} messageSource - 由 Class Message 生成
  * @example
  *let deliverMessage = new WebIM.message('delivery', msgId);
@@ -2245,7 +2537,7 @@ connection.prototype.getUniqueId = function (prefix) {
  *conn.send(deliverMessage.body);
  */
 
-connection.prototype.send = function (messageSource) {
+connection.prototype.sendOld = function (messageSource) {
     var self = this;
     var message = messageSource;
     if (message.type === 'txt') {
@@ -2309,6 +2601,29 @@ connection.prototype.send = function (messageSource) {
         }
     }
 };
+
+/**
+ * 发送消息
+ * @param {Object} messageSource - 由 Class Message 生成
+ * @example
+ *let deliverMessage = new WebIM.message('delivery', msgId);
+ *deliverMessage.set({
+ *  id: msgId, 
+ *  to: msg.from
+ *});
+ *conn.send(deliverMessage.body);
+ */
+
+connection.prototype.send= function (messageSource) {
+    var self = this;
+    sendMessage(messageSource, self);
+};
+
+var sendMessage = function (messageOption, self) {
+    var message = sendChatMessage(messageOption, self);
+    base64transform(message);
+}
+
 
 /**
  * 添加联系人(已废弃)
@@ -2376,7 +2691,7 @@ connection.prototype.removeRoster = function (options) {
  * @param {Function} options.success - 成功之后的回调，默认为空
  * @param {Function} options.error - 失败之后的回调，默认为空
  */
-connection.prototype.getRoster = function (options) {
+connection.prototype.getRosterOld = function (options) {
     var conn = this;
     var dom = $iq({
         type: 'get'
@@ -2408,6 +2723,80 @@ connection.prototype.getRoster = function (options) {
         });
     }
 };
+
+/**
+ * 获取联系人
+ * @param {Object} options - 
+ * @param {Function} options.success - 成功之后的回调，默认为空
+ * @param {Function} options.error - 失败之后的回调，默认为空
+ */
+
+connection.prototype.getRoster = function (options) {
+    var options = options || {};
+    var self = this;
+    if (!_utils.isCanSetRequestHeader) {
+        conn.onError({
+            type: _code.WEBIM_CONNCTION_NOT_SUPPORT_CHATROOM_ERROR
+        });
+        return;
+    }
+
+    var conn = this,
+        token = options.accessToken || this.token;
+
+    if (token) {
+        var apiUrl = options.apiUrl || this.apiUrl;
+        var appName = this.context.appName;
+        var orgName = this.context.orgName;
+
+        if (!appName || !orgName) {
+            conn.onError({
+                type: _code.WEBIM_CONNCTION_AUTH_ERROR
+            });
+            return;
+        }
+
+        var suc = function (data, xhr) {
+            //_parseFriend *****之前用这个方法处理的返回消息
+            let friends = [];
+            data.data.forEach((v,i) => {
+                friends.push({
+                    name: v,
+                    subscription: 'both',
+                    jid: self.context.jid
+                });
+            })
+            typeof options.success === 'function' && options.success(friends);
+            this.onRoster && this.onRoster();
+        };
+
+        var error = function (res, xhr, msg) {
+            typeof options.error === 'function' && options.error(res);
+        };
+
+        // var pageInfo = {
+        //     pagenum: parseInt(options.pagenum) || 1,
+        //     pagesize: parseInt(options.pagesize) || 20
+        // };
+
+        var opts = {
+            url: apiUrl + '/' + orgName + '/' + appName + '/users/' + this.user + '/contacts/users',
+            dataType: 'json',
+            type: 'GET',
+            headers: {'Authorization': 'Bearer ' + token},
+            // data: pageInfo,
+            success: suc || _utils.emptyfn,
+            error: error || _utils.emptyfn
+        };
+        _utils.ajax(opts);
+    } else {
+        conn.onError({
+            type: _code.WEBIM_CONNCTION_TOKEN_NOT_ASSIGN_ERROR
+        });
+    }
+};
+
+
 
 /**
  * 订阅和反向订阅
@@ -2444,7 +2833,7 @@ connection.prototype.getRoster = function (options) {
  否则会进入死循环
  *
  * @param {Object} options - 
- * @param {String} options.to - 想要订阅的联系人
+ * @param {String} options.to - 想要订阅的联系人ID
  * @param {String} options.nick - 想要订阅的联系人昵称 （非必须）
  * @param {String} options.message - 发送给想要订阅的联系人的验证消息（非必须）
  */
@@ -2738,7 +3127,7 @@ connection.prototype.setUserSig = function (desc) {
 
 /**
  *
- * @private
+ * @private //demo删除
  */
 connection.prototype.setPresence = function (type, status) {
     var dom = $pres({xmlns: 'jabber:client'});
@@ -3254,7 +3643,7 @@ function _parsePrivacy(iq) {
  * @param {Function} options.success - 成功之后的回调，默认为空
  * @param {Function} options.error - 失败之后的回调，默认为空
  */
-connection.prototype.getBlacklist = function (options) {
+connection.prototype.getBlacklistOld = function (options) {
     options = (options || {});
     var iq = $iq({type: 'get'});
     var sucFn = options.success || _utils.emptyfn;
@@ -3271,6 +3660,60 @@ connection.prototype.getBlacklist = function (options) {
         me.onBlacklistUpdate([]);
         errFn();
     });
+};
+
+/**
+ * 获取好友黑名单
+ * @param {Object} options - 
+ * @param {Function} options.success - 成功之后的回调，默认为空
+ * @param {Function} options.error - 失败之后的回调，默认为空
+ */
+connection.prototype.getBlacklist = function (options) {
+    var options = options || {};
+    if (!_utils.isCanSetRequestHeader) {
+        conn.onError({
+            type: _code.WEBIM_CONNCTION_NOT_SUPPORT_CHATROOM_ERROR
+        });
+        return;
+    }
+
+    var conn = this,
+        token = options.accessToken || this.token;
+
+    if (token) {
+        var apiUrl = options.apiUrl || this.apiUrl;
+        var appName = this.context.appName;
+        var orgName = this.context.orgName;
+
+        if (!appName || !orgName) {
+            conn.onError({
+                type: _code.WEBIM_CONNCTION_AUTH_ERROR
+            });
+            return;
+        }
+
+        var suc = function (data, xhr) {
+            typeof options.success === 'function' && options.success(data);
+        };
+
+        var error = function (res, xhr, msg) {
+            typeof options.error === 'function' && options.error(res);
+        };
+
+        var opts = {
+            url: apiUrl + '/' + orgName + '/' + appName + '/users/' + this.user + '/blocks/users',
+            dataType: 'json',
+            type: 'GET',
+            headers: {'Authorization': 'Bearer ' + token},
+            success: suc || _utils.emptyfn,
+            error: error || _utils.emptyfn
+        };
+        _utils.ajax(opts);
+    } else {
+        conn.onError({
+            type: _code.WEBIM_CONNCTION_TOKEN_NOT_ASSIGN_ERROR
+        });
+    }
 };
 
 /**

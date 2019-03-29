@@ -204,6 +204,7 @@ const { Types, Creators } = createActions({
                 msg,
                 to,
                 roomType: chatroom,
+                chatType: 'singleChat',
                 success: function () {
                     dispatch(Creators.updateMessageStatus(pMessage, "sent"))
                 },

@@ -459,6 +459,8 @@ var _login = function (options, conn) {
             case 0:
                 var CommSyncDLMessage = root.lookup("easemob.pb.CommSyncDL");
                 CommSyncDLMessage = CommSyncDLMessage.decode(result.payload);
+                var msgId = new Long(CommSyncDLMessage.serverId.low,CommSyncDLMessage.serverId.high, CommSyncDLMessage.serverId.unsigned).toString();
+                var metaId = new Long(CommSyncDLMessage.metaId.low,CommSyncDLMessage.metaId.high, CommSyncDLMessage.metaId.unsigned).toString();
                 console.log(CommSyncDLMessage);
                 if (CommSyncDLMessage.metas.length !== 0) {
                     if (CommSyncDLMessage.metas[0].ns === 1) {
@@ -466,12 +468,25 @@ var _login = function (options, conn) {
                         lastsession(CommSyncDLMessage.nextKey, CommSyncDLMessage.queue);
                     }
                 }
+                else if(CommSyncDLMessage.status.errorCode === 0){
+                    if (_msgHash[metaId]) {
+                        try {
+                            _msgHash[metaId].success instanceof Function && _msgHash[metaId].success(metaId, msgId);
+                        } catch (e) {
+                            this.onError({
+                                type: _code.WEBIM_CONNCTION_CALLBACK_INNER_ERROR
+                                , data: e
+                            });
+                        }
+                        delete _msgHash[metaId];
+                    }
+                }
                 break;
             case 1:
                 var CommUnreadDLMessage = root.lookup("easemob.pb.CommUnreadDL");
                 CommUnreadDLMessage = CommUnreadDLMessage.decode(result.payload);
                 if (CommUnreadDLMessage.unread.length === 0) {
-                    rebuild();   //????感觉没卵用
+                    // rebuild();   //????感觉没卵用
                 }
                 else {
                     for (var i = 0; i < CommUnreadDLMessage.unread.length; i++) {
@@ -633,6 +648,7 @@ var backqueue = function (backqueue) {
 }
 
 var receiveProvision = function (result) {
+
     var provisionMessage = root.lookup("easemob.pb.Provision");
     var receiveProvisionResult = provisionMessage.decode(result.payload);
 
@@ -2506,7 +2522,7 @@ connection.prototype.sendCommand = function (dom, id) {
  * 随机生成一个id用于消息id
  * @param {String} prefix - 前缀，默认为"WEBIM_"
  */
-connection.prototype.getUniqueId = function (prefix) {
+connection.prototype.getUniqueIdOld = function (prefix) {
     // fix: too frequently msg sending will make same id
     if (this.autoIncrement) {
         this.autoIncrement++
@@ -2523,6 +2539,21 @@ connection.prototype.getUniqueId = function (prefix) {
     } else {
         return 'WEBIM_' + hexd;
     }
+};
+
+connection.prototype.getUniqueId = function (prefix) { //*******
+    // fix: too frequently msg sending will make same id
+    if (this.autoIncrement) {
+        this.autoIncrement++
+    } else {
+        this.autoIncrement = 1
+    }
+    var cdate = new Date();
+    var offdate = new Date(2010, 1, 1);
+    var offset = cdate.getTime() - offdate.getTime();
+    var hexd = offset + this.autoIncrement;
+    return hexd;
+
 };
 
 /**
@@ -2621,6 +2652,7 @@ connection.prototype.send= function (messageSource) {
 
 var sendMessage = function (messageOption, self) {
     var message = sendChatMessage(messageOption, self);
+    _msgHash[messageOption.id] = messageOption;
     base64transform(message);
 }
 

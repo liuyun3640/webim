@@ -8,6 +8,7 @@ var sendChatMessage = function(messageOption, conn){
     if (messageOption.type === "txt") {
         fifthMessage.type = 0;
     } else {
+        
 
     }
     fifthMessage.text = messageOption.msg;

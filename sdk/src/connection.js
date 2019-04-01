@@ -13,7 +13,10 @@ var _msg = require('./message');
 var _message = _msg._msg;
 var _msgHash = {};
 var Queue = require('./queue').Queue;
-var sendChatMessage = require('./sendMessage/sendChatMessage').sendChatMessage;
+
+var ChatMessage = require('./chat/sendChatMessage');
+var HandelChatMessage = require('./chat/handelChatMessage');
+
 var CryptoJS = require('crypto-js');
 var _ = require('underscore');
 
@@ -463,12 +466,18 @@ var _login = function (options, conn) {
                 var metaId = new Long(CommSyncDLMessage.metaId.low,CommSyncDLMessage.metaId.high, CommSyncDLMessage.metaId.unsigned).toString();
                 console.log(CommSyncDLMessage);
                 if (CommSyncDLMessage.metas.length !== 0) {
-                    if (CommSyncDLMessage.metas[0].ns === 1) {
-                        metapayload(CommSyncDLMessage.metas);
+                    // if (CommSyncDLMessage.metas[0].ns === 1) {
+                        metapayload(CommSyncDLMessage.metas, conn);
                         lastsession(CommSyncDLMessage.nextKey, CommSyncDLMessage.queue);
-                    }
+                    // }
+                    // else if(CommSyncDLMessage.metas[0].ns === 2){
+
+                    // }
+                    // else if(CommSyncDLMessage.metas[0].ns === 3){
+
+                    // }
                 }
-                else if(CommSyncDLMessage.status.errorCode === 0){
+                else if(CommSyncDLMessage.status.errorCode === 0 && !CommSyncDLMessage.isLast){
                     if (_msgHash[metaId]) {
                         try {
                             _msgHash[metaId].success instanceof Function && _msgHash[metaId].success(metaId, msgId);
@@ -521,7 +530,7 @@ var _login = function (options, conn) {
 
 
 /**
- * 确定收到消息给erlang反馈
+ * 确定收到消息给erlang反馈//跟服务端确认是否为最后一条消息comm消息islast = true
  * */
 var lastsession = function (nexkey, queue) {
 
@@ -531,7 +540,7 @@ var lastsession = function (nexkey, queue) {
     var commSyncULMessage = root.lookup("easemob.pb.CommSyncUL");
     var secondMessage = commSyncULMessage.decode(emptyMessage);
     secondMessage.queue = queue;
-    secondMessage.key = nexkey;
+    secondMessage.key = new Long(nexkey.low,nexkey.high, nexkey.unsigned).toString();
     secondMessage = commSyncULMessage.encode(secondMessage).finish();
 
     var mSyncMessage = root.lookup("easemob.pb.MSync");
@@ -552,43 +561,21 @@ var lastsession = function (nexkey, queue) {
     }
 }
 
-var metapayload = function (meta) {
-    for (var i = 0; i < meta.length; i++) {
-        messageBody(meta[i].payload);
-    }
-}
-
-var messageBody = function (messagebody) {
-
-    var messageBodyMessage = root.lookup("easemob.pb.MessageBody");
-    var thirdMessage = messageBodyMessage.decode(messagebody);
-    var type = null;
-    if (thirdMessage.type === 1) {
-        type = "chat";
-    }
-    else if (thirdMessage.type === 2) {
-        type = "groupchat";
-    }
-    else if (thirdMessage.type === 3) {
-        type = "chatroom";
-    }
-    for (var i = 0; i < thirdMessage.contents.length; i++) {
-
-        var msg = {
-            id: window.this.user,
-            type: type,
-            form: thirdMessage.from.name,
-            to: thirdMessage.to.name,
-            data: thirdMessage.contents[i].text,
-            ext: thirdMessage.ext,
-            sourceMsg: thirdMessage.contents[i].text
+var metapayload = function (metas, conn) {
+    for (var i = 0; i < metas.length; i++) {
+        if(metas[i].ns === 1){      //CHAT
+            // messageBody(metas[i]);
+            HandelChatMessage.handelMessage(metas[i], conn)
         }
-        msg.error = "";
-        msg.errorText = "";
-        msg.errorCode = "";
-        window.this.onTextMessage(msg);
+        else if(metas[i].ns === 2){   //MUC
+
+        }
+        else if(metas[i].ns === 3){    //ROSTER
+
+        }
     }
 }
+
 
 
 /**
@@ -680,6 +667,7 @@ var base64transform = function (str) {
     sock.send(strr);
 }
 
+
 var _parseMessageType = function (msginfo) {   //*****
     var receiveinfo = msginfo.getElementsByTagName('received'),
         inviteinfo = msginfo.getElementsByTagName('invite'),
@@ -728,7 +716,7 @@ var _handleMessageQueue = function (conn) {
     }
 };
 
-var _loginCallback = function (status, msg, conn) {
+var _loginCallback = function (status, msg, conn) {    //******
     var conflict, error;
 
     if (msg === 'conflict') {
@@ -2518,6 +2506,17 @@ connection.prototype.sendCommand = function (dom, id) {
     }
 };
 
+connection.prototype.sendMSync = function(str){
+    var strr = "";
+    for (var i = 0; i < str.length; i++) {
+        var str0 = String.fromCharCode(str[i]);
+        strr = strr + str0;
+    }
+    strr = window.btoa(strr);
+    console.log("转码发送" + strr);
+    sock.send(strr);
+}
+
 /**
  * 随机生成一个id用于消息id
  * @param {String} prefix - 前缀，默认为"WEBIM_"
@@ -2645,16 +2644,19 @@ connection.prototype.sendOld = function (messageSource) {
  *conn.send(deliverMessage.body);
  */
 
-connection.prototype.send= function (messageSource) {
+connection.prototype.send= function (messageOption) {
     var self = this;
-    sendMessage(messageSource, self);
+    // sendMessage(messageSource, self);
+    ChatMessage.default(messageOption, self);
+    _msgHash[messageOption.id] = messageOption;
+    // base64transform(message);
 };
 
-var sendMessage = function (messageOption, self) {
-    var message = sendChatMessage(messageOption, self);
-    _msgHash[messageOption.id] = messageOption;
-    base64transform(message);
-}
+// var sendMessage = function (messageOption, self) {
+//     var message = chatMessage(messageOption, self);
+//     _msgHash[messageOption.id] = messageOption;
+//     base64transform(message);
+// }
 
 
 /**

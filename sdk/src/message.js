@@ -218,6 +218,9 @@ var CryptoJS = require('crypto-js');
             , fail: opt.fail
             , flashUpload: opt.flashUpload
             , body: opt.body
+
+
+            
         };
         !opt.roomType && delete this.body.roomType;
     };

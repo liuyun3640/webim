@@ -35,15 +35,25 @@
             case 'cmd':
                 fifthMessage.type = 6;
                 break;
-            default:
-                fifthMessage.type = 0;
-                break;
+            // default:
+            //     fifthMessage.type = 0;
+            //     break;
         }
         var messageBody = conn.context.root.lookup("easemob.pb.MessageBody");
         var fourthMessage = messageBody.decode(emptyMessage);
-        if(!messageOption.group && !messageOption.roomType){
+        if(messageOption.type === "delivery"){   //目前为单聊的delivery
+            fourthMessage.type = 5;
+            fourthMessage.from = conn.context.jid;
+            fourthMessage.to = {
+                appKey: conn.appKey,
+                name: messageOption.to,
+                domain: "easemob.com",
+                clientResource: conn.clientResource
+            }
+            fourthMessage.ack_message_id = messageOption.bodyId;
+        }
+        else if(!messageOption.group && !messageOption.roomType){
             fourthMessage.type = 1;
-            // console.log(self);
             fourthMessage.from = conn.context.jid;
             fourthMessage.to = {
                 appKey: conn.appKey,
@@ -54,7 +64,6 @@
         }
         else if (messageOption.group === "groupchat" && !messageOption.roomType) {
             fourthMessage.type = 2;
-            // console.log(self);
             fourthMessage.from = {
                 appKey: conn.appKey,
                 name: conn.user,
@@ -71,7 +80,6 @@
         }
         else if (messageOption.group === "groupchat" && messageOption.roomType) {
             fourthMessage.type = 3;
-            // console.log(self);
             fourthMessage.from = {
                 appKey: conn.appKey,
                 name: conn.user,
@@ -91,7 +99,16 @@
         var MetaMessage = conn.context.root.lookup("easemob.pb.Meta");
         var thirdMessage = MetaMessage.decode(emptyMessage);
         thirdMessage.id = messageOption.id;
-        if(!messageOption.group && !messageOption.roomType){
+        if(messageOption.type === "delivery"){   //目前为单聊的delivery
+            thirdMessage.from = conn.context.jid;
+            thirdMessage.to = {
+                appKey: conn.appKey,
+                name: messageOption.to,
+                domain: "easemob.com",
+                clientResource: conn.clientResource
+            }
+        }
+        else if(!messageOption.group && !messageOption.roomType){
             thirdMessage.from = conn.context.jid;
             thirdMessage.to = {
                 appKey: conn.appKey,
@@ -142,14 +159,11 @@
         firstMessage.guid = conn.jid;
         firstMessage.payload = secondMessage;
         firstMessage = msyncMessage.encode(firstMessage).finish();
-        // return firstMessage;
         conn.sendMSync(firstMessage);
     }
 
     var sendChatMessage = function(messageOption, conn){
-        // console.log(5555);
         var me = this;
-        // var sendMessage;
         this.msg = messageOption;
         if(messageOption.file){
             var _tmpComplete = this.msg.onFileUploadComplete;
@@ -183,10 +197,8 @@
                     , 
                     filetype: me.msg.filetype
                 }
-                
-                // _send(me.msg);
-                _tmpComplete instanceof Function && _tmpComplete(data, me.msg.id);
                 sendMessage(me.msg, conn);
+                _tmpComplete instanceof Function && _tmpComplete(data, me.msg.id);
             };
 
             me.msg.onFileUploadComplete = _complete;

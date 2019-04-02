@@ -466,18 +466,13 @@ var _login = function (options, conn) {
                 var metaId = new Long(CommSyncDLMessage.metaId.low,CommSyncDLMessage.metaId.high, CommSyncDLMessage.metaId.unsigned).toString();
                 console.log(CommSyncDLMessage);
                 if (CommSyncDLMessage.metas.length !== 0) {
-                    // if (CommSyncDLMessage.metas[0].ns === 1) {
                         metapayload(CommSyncDLMessage.metas, conn);
                         lastsession(CommSyncDLMessage.nextKey, CommSyncDLMessage.queue);
-                    // }
-                    // else if(CommSyncDLMessage.metas[0].ns === 2){
-
-                    // }
-                    // else if(CommSyncDLMessage.metas[0].ns === 3){
-
-                    // }
                 }
-                else if(CommSyncDLMessage.status.errorCode === 0 && !CommSyncDLMessage.isLast){
+                else if(CommSyncDLMessage.isLast){
+                    //当前为最后一条消息
+                }
+                else if(CommSyncDLMessage.status.errorCode === 0){
                     if (_msgHash[metaId]) {
                         try {
                             _msgHash[metaId].success instanceof Function && _msgHash[metaId].success(metaId, msgId);

@@ -13,12 +13,12 @@
                 break;
             case 'img':
                 fifthMessage.type = 1;
-                fifthMessage.displayname = messageOption.body.filename;
-                fifthMessage.remotepath = messageOption.body.url;
-                fifthMessage.secretkey = messageOption.body.secret;
-                fifthMessage.filelength = messageOption.body.file_length;
+                fifthMessage.displayName = messageOption.body.filename;
+                fifthMessage.remotePath = messageOption.body.url;
+                fifthMessage.secretKey = messageOption.body.secret;
+                fifthMessage.fileLength = messageOption.body.file_length;
                 fifthMessage.size = messageOption.body.size;
-                fifthMessage.thumbnaildisplayname = messageOption.body.filename;
+                fifthMessage.thumbnailDisplayName = messageOption.body.filename;
                 break;
             case 'audio':
                 fifthMessage.type = 2;

@@ -20,6 +20,7 @@ var handelMessage = function(meta, conn){
         var msgBody = thirdMessage.contents[i];
         var from = thirdMessage.from.name;
         var to = thirdMessage.to.name
+        var extmsg = thirdMessage.ext || {}
         switch(msgBody.type){
             case 0:
             	var receiveMsg = thirdMessage.contents[i].text;
@@ -66,17 +67,17 @@ var handelMessage = function(meta, conn){
                 , from: from
                 , to: to
                 ,
-                url: msgBody.url && (location.protocol != 'https:' && self.isHttpDNS) ? (self.apiUrl + msgBody.url.substr(msgBody.url.indexOf("/", 9))) : msgBody.url
-                , secret: msgBody.secret
-                , filename: msgBody.filename
-                , thumb: msgBody.thumb
-                , thumb_secret: msgBody.thumb_secret
-                , file_length: msgBody.file_length || ''
+                url: msgBody.remotePath && (location.protocol != 'https:' && self.isHttpDNS) ? (self.apiUrl + msgBody.remotePath.substr(msgBody.remotePath.indexOf("/", 9))) : msgBody.remotePath
+                , secret: msgBody.secretKey
+                , filename: msgBody.displayName
+                , thumb: msgBody.thumbnailRemotePath
+                , thumb_secret: msgBody.thumbnailSecretKey
+                , file_length: msgBody.fileLength || ''
                 , width: rwidth
                 , height: rheight
                 , filetype: msgBody.filetype || ''
-                , accessToken: conn.context.accessToken || ''
-                // , ext: extmsg
+                , accessToken: conn.token || ''
+                , ext: extmsg
                 // , delay: parseMsgData.delayTimeStamp
             };
             !msg.delay && delete msg.delay;

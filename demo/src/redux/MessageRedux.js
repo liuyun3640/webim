@@ -386,11 +386,11 @@ const { Types, Creators } = createActions({
                         let type = msg.type
                         let from = type === "chat" ? "from" : "to"
                         let id = msg[from]
-                        if (collection[type][id]) {
-                            collection[type][id] += 1
-                        } else {
-                            collection[type][id] = 1
-                        }
+                        // if (collection[type][id]) {
+                        //     collection[type][id] += 1
+                        // } else {
+                        //     collection[type][id] = 1
+                        // }
                     }
                 })
 

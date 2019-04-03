@@ -15,7 +15,9 @@ var _msgHash = {};
 var Queue = require('./queue').Queue;
 
 var ChatMessage = require('./chat/sendChatMessage');
-var HandelChatMessage = require('./chat/handelChatMessage');
+var HandleChatMessage = require('./chat/handleChatMessage');
+var HandleMucMessage = require('./muc/HandleMucMessage');
+var HandleRosterMessage = require('./roster/HandleRosterMessage');
 
 var CryptoJS = require('crypto-js');
 var _ = require('underscore');
@@ -560,13 +562,13 @@ var metapayload = function (metas, conn) {
     for (var i = 0; i < metas.length; i++) {
         if(metas[i].ns === 1){      //CHAT
             // messageBody(metas[i]);
-            HandelChatMessage.handelMessage(metas[i], conn)
+            HandleChatMessage.handleMessage(metas[i], conn)
         }
         else if(metas[i].ns === 2){   //MUC
-
+            HandleMucMessage.handleMessage(metas[i], conn);
         }
         else if(metas[i].ns === 3){    //ROSTER
-
+            HandleRosterMessage.handleMessage(metas[i], conn);
         }
     }
 }
@@ -2867,15 +2869,17 @@ connection.prototype.getRoster = function (options) {
  * @param {String} options.message - 发送给想要订阅的联系人的验证消息（非必须）
  */
 connection.prototype.subscribe = function (options) {
-    var jid = _getJid(options, this);
-    var pres = $pres({to: jid, type: 'subscribe'});
-    if (options.message) {
-        pres.c('status').t(options.message).up();
-    }
-    if (options.nick) {
-        pres.c('nick', {'xmlns': 'http://jabber.org/protocol/nick'}).t(options.nick);
-    }
-    this.sendCommand(pres.tree());
+    HandleRosterMessage.addRoster(options, "add", this);
+    // var jid = _getJid(options, this);
+    // var pres = $pres({to: jid, type: 'subscribe'});
+    // if (options.message) {
+    //     pres.c('status').t(options.message).up();
+    // }
+    // if (options.nick) {
+    //     pres.c('nick', {'xmlns': 'http://jabber.org/protocol/nick'}).t(options.nick);
+    // }
+    // this.sendCommand(pres.tree());
+
 };
 
 /**

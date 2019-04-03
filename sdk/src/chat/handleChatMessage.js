@@ -14,7 +14,7 @@ var sendDelivery = function(conn, msg ,msgId){
         // self.send(deliverMessage.body);
     }
 }
-var handelMessage = function(meta, conn){
+var handleMessage = function(meta, conn){
 	var self = conn;
 	var messageBodyMessage = self.context.root.lookup("easemob.pb.MessageBody");
     var thirdMessage = messageBodyMessage.decode(meta.payload);
@@ -128,4 +128,4 @@ var handelMessage = function(meta, conn){
     
 }
 
-export {handelMessage}
+export {handleMessage}

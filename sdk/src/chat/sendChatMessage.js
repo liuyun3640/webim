@@ -1,3 +1,7 @@
+    var CryptoJS = require('crypto-js');
+    ;(function () {
+        'use strict';
+
     var _utils = require("../utils").utils;
 
     var sendMessage = function(messageOption, conn){
@@ -278,8 +282,9 @@
             sendMessage(me.msg, conn);
         }
     }
+    exports.sendChatMessage = sendChatMessage;
+}());
 
-
-    export default sendChatMessage;
+    // export default sendChatMessage;
 
  

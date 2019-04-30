@@ -369,6 +369,10 @@ var metapayload = function (metas, status, conn) {
         else if(metas[i].ns === 3){    //ROSTER
             HandleRosterMessage.handleMessage(metas[i], status, conn);
         }
+        else if(metas[i].ns === 0){      //CHAT
+            // messageBody(metas[i]);
+            HandleChatMessage.handleMessage(metas[i], status, conn)
+        }
     }
 }
 
@@ -2456,7 +2460,7 @@ connection.prototype.getUniqueId = function (prefix) { //*******
 
 connection.prototype.send= function (messageOption) {
     var self = this;
-    ChatMessage.default(messageOption, self);
+    ChatMessage.sendChatMessage(messageOption, self);
     _msgHash[messageOption.id] = messageOption;
 };
 

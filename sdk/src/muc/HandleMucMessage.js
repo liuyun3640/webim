@@ -1,3 +1,8 @@
+var CryptoJS = require('crypto-js');
+;(function () {
+    'use strict';
+
+
 var Long = require("long");
 var _utils = require("../utils").utils;
 // var ChatMessage = require('./sendChatMessage');
@@ -101,4 +106,9 @@ var handleMessage = function(meta, status, conn){
     console.log(thirdMessage);
 }
 
-export {handleMessage}
+
+    // exports._msg = _Message;
+    exports.handleMessage = handleMessage;
+}());
+
+// export {handleMessage}

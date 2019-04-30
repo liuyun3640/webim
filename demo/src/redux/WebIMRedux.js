@@ -242,7 +242,7 @@ WebIM.conn.listen({
         const bySelf = from == username
         // root id: when sent by current user or in group chat, is id of receiver. Otherwise is id of sender
         const chatId = bySelf || type !== "chat" ? to : from
-        if (type === "chat" &&( _.get(rootState,"entities.roster.byName["+chatId+"].subscription")  === "none") ||  !(_.get(rootState,"entities.roster.byName["+chatId+"].subscription"))){
+        if (type === "chat" && from !== "admin" &&( _.get(rootState,"entities.roster.byName["+chatId+"].subscription")  === "none") ||  from !== "admin" && !(_.get(rootState,"entities.roster.byName["+chatId+"].subscription"))){
             type = "stranger";
             store.dispatch(StrangerActions.updateStrangerMessage(from,message,"txt"))            
         }

@@ -1,3 +1,7 @@
+var CryptoJS = require('crypto-js');
+;(function () {
+    'use strict';
+
 var Long = require("long");
 var _utils = require("../utils").utils;
 // var _msg = require('./message');
@@ -247,4 +251,7 @@ var handleMessage = function(meta, status, conn, ignoreCallback){
     
 }
 
-export {handleMessage}
+    exports.handleMessage = handleMessage;
+}());
+
+// export {handleMessage}

@@ -1,3 +1,7 @@
+var CryptoJS = require('crypto-js');
+;(function () {
+    'use strict';
+
 var sendChatMessage = function(messageOption, conn){
 	console.log(5555);
 	var self = conn;
@@ -118,4 +122,7 @@ var sendChatMessage = function(messageOption, conn){
     return firstMessage;
 }
 
-export {sendChatMessage}
+    exports.sendChatMessage = sendChatMessage;
+}());
+
+// export {sendChatMessage}

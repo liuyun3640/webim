@@ -3,7 +3,6 @@ var CryptoJS = require('crypto-js');
     'use strict';
 
 var sendChatMessage = function(messageOption, conn){
-	console.log(5555);
 	var self = conn;
 
 	var emptyMessage = [];

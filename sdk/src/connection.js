@@ -15,7 +15,7 @@ var ChatMessage = require('./chat/sendChatMessage');
 var HandleChatMessage = require('./chat/handleChatMessage');
 var HandleMucMessage = require('./muc/HandleMucMessage');
 var HandleRosterMessage = require('./roster/HandleRosterMessage');
-
+var HandleStatisticsMessage = require('./statistics/HandleRosterMessage');
 var CryptoJS = require('crypto-js');
 var _ = require('underscore');
 
@@ -369,9 +369,10 @@ var metapayload = function (metas, status, conn) {
         else if(metas[i].ns === 3){    //ROSTER
             HandleRosterMessage.handleMessage(metas[i], status, conn);
         }
-        else if(metas[i].ns === 0){      //CHAT
+        else if(metas[i].ns === 0){ 
+             //CHAT
             // messageBody(metas[i]);
-            HandleChatMessage.handleMessage(metas[i], status, conn)
+            HandleStatisticsMessage.handleMessage(metas[i], status, conn)
         }
     }
 }

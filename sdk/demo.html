@@ -10,10 +10,11 @@
       
     </script>
     <script src="./WebIMConfig.js"></script>
+    <script src="./dist/plupload.full.min.js"></script>
     <!-- <script src="./dist/strophe-1.2.8.js"></script> -->
     <!-- <script src="./dist/websdk-1.11.3.js"></script> -->
     <!-- <script src="./websdk-1.4.13.js"></script> -->
-     <script src="./webimSDK.js"></script>
+     <script src="./dist/webimSDK.js"></script>
 
 </head>
 
@@ -42,7 +43,7 @@
     </div>
     <div>
         <br> image:
-        <input type="file" id="image">
+        <a id="image">select</a>
         <button id="privateImg">PrivateImg</button>
     </div>
     <div>
@@ -128,11 +129,12 @@
         <button id="endConVideo">EndConVideo</button>
         </video>
     </div>
-    <script src="./EMedia_sdk.js"></script>
+    <h3 id="textContent"></h3>
+    <!-- <script src="./EMedia_sdk-2.1.1.29f2187.js"></script> -->
     <script>
 
         var conn = {};
-        console.log(WebIM, window.WebIM);
+        // console.log(WebIM, window.WebIM);
         WebIM.config = config;
         conn = WebIM.conn = new WebIM.default.connection({
             isHttpDNS: WebIM.config.isHttpDNS,
@@ -149,6 +151,7 @@
             delivery: WebIM.config.delivery
         })
 
+        
 
         conn.listen({
             onOpened: function (message) {          //连接成功回调
@@ -160,10 +163,13 @@
             },
             onClosed: function (message) {
                 console.log("onclose:" + message);
-                console.log(error);
+                // console.log(error);
             },         //连接关闭回调
             onTextMessage: function (message) {
                 console.log('onTextMessage: ', message);
+                 var text = document.getElementById("textContent");
+                 text.innerHTML = message.data + "from"+message.from;
+
 
             },    //收到文本消息
 
@@ -172,6 +178,8 @@
             },   //收到表情消息
             onPictureMessage: function (message) {
                 console.log('onPicMessage: ', message);
+                var text = document.getElementById("textContent");
+                 text.innerHTML = "<img src=" + message.url + " />"
             }, //收到图片消息
             onCmdMessage: function (message) {
                 console.log('onCmdMessage: ', message);
@@ -303,49 +311,49 @@
 
         //初始化单人视频
         // 初始化WebRTC Call
-        var rtcCall = null
-        if (WebIM.WebRTC) {
-            rtcCall = new WebIM.WebRTC.Call({
-                connection: conn,
+        // var rtcCall = null
+        // if (WebIM.default.WebRTC) {
+        //     rtcCall = new WebIM.default.WebRTC.Call({
+        //         connection: conn,
 
-                mediaStreamConstaints: {
-                    audio: true,
-                    video: true
-                },
+        //         mediaStreamConstaints: {
+        //             audio: true,
+        //             video: true
+        //         },
 
-                listener: {
-                    onAcceptCall: function (from, options) {
-                        console.log('onAcceptCall::', 'from: ', from, 'options: ', options);
-                    },
-                    onGotRemoteStream: function (stream, streamType) {
-                        console.log('onGotRemoteStream::', 'stream: ', stream, 'streamType: ', streamType);
-                        var video = document.getElementById('video');
-                        video.srcObject = stream;
-                    },
-                    onGotLocalStream: function (stream, streamType) {
-                        console.log('onGotLocalStream::', 'stream:', stream, 'streamType: ', streamType);
-                        var video = document.getElementById('localVideo');
-                        video.srcObject = stream;
-                    },
-                    onRinging: function (caller) {
-                        console.log('onRinging::', 'caller:', caller);
-                        alert('onRinging::', 'caller:', caller)
-                    },
-                    onTermCall: function (reason) {
-                        console.log('onTermCall::');
-                        console.log('reason:', reason);
-                    },
-                    onIceConnectionStateChange: function (iceState) {
-                        console.log('onIceConnectionStateChange::', 'iceState:', iceState);
-                    },
-                    onError: function (e) {
-                        console.log(e);
-                    }
-                }
-            });
-        } else {
-            console.warn('不能进行视频通话！您的浏览器不支持webrtc或者协议不是https。')
-        }
+        //         listener: {
+        //             onAcceptCall: function (from, options) {
+        //                 console.log('onAcceptCall::', 'from: ', from, 'options: ', options);
+        //             },
+        //             onGotRemoteStream: function (stream, streamType) {
+        //                 console.log('onGotRemoteStream::', 'stream: ', stream, 'streamType: ', streamType);
+        //                 var video = document.getElementById('video');
+        //                 video.srcObject = stream;
+        //             },
+        //             onGotLocalStream: function (stream, streamType) {
+        //                 console.log('onGotLocalStream::', 'stream:', stream, 'streamType: ', streamType);
+        //                 var video = document.getElementById('localVideo');
+        //                 video.srcObject = stream;
+        //             },
+        //             onRinging: function (caller) {
+        //                 console.log('onRinging::', 'caller:', caller);
+        //                 alert('onRinging::', 'caller:', caller)
+        //             },
+        //             onTermCall: function (reason) {
+        //                 console.log('onTermCall::');
+        //                 console.log('reason:', reason);
+        //             },
+        //             onIceConnectionStateChange: function (iceState) {
+        //                 console.log('onIceConnectionStateChange::', 'iceState:', iceState);
+        //             },
+        //             onError: function (e) {
+        //                 console.log(e);
+        //             }
+        //         }
+        //     });
+        // } else {
+        //     console.warn('不能进行视频通话！您的浏览器不支持webrtc或者协议不是https。')
+        // }
 
 
         //有人加入会议，其他人调用joinXX等方法，如果加入成功，已经在会议中的人将会收到
@@ -447,7 +455,7 @@
 
         //登录
         document.getElementById('login').onclick = function () {
-            console.log(WebIM, window.WebIM);
+            // console.log(WebIM, window.WebIM);
             var uname = document.getElementById("name").value;
             var upwd = document.getElementById("pwd").value;
             options = {
@@ -542,45 +550,96 @@
             msg.body.chatType = 'singleChat';
             conn.send(msg.body);
         };
+        var orgName, appName, devInfos;
+        var appKey = WebIM.config.appkey || '';
+
+        if (appKey) {
+            devInfos = appKey.split('#');
+            orgName = devInfos[0];
+            appName = devInfos[1];
+        }
+
+        var uploader = new plupload.Uploader({
+            browse_button : 'image',
+//                  runtimes : 'html5,flash,html4',
+            url : WebIM.config.apiURL + '/' + orgName + '/' + appName + '/chatfiles',
+            // flash_swf_url,silverlight_xap_url路径要写全，否则会在IE下出现问题（无法打开选择文件窗口）
+            flash_swf_url : './dist/Moxie.swf',
+            silverlight_xap_url :'./dist/Moxie.xap',
+        });
+        uploader.bind('FilesAdded', function(uploader, files) {
+            console.log(files, "FilesAdded");
+        });
+
+        uploader.bind('FileUploaded', function(uploader, files, responseObject) {
+            if (responseObject.status == 200) {
+                // data = $.parseJSON(responseObject.response);
+            }
+                console.log(responseObject.response,"FileUploaded");
+
+        })
+
+        uploader.bind('UploadComplete', function(uploader, files) {
+            console.log(files,"UploadComplete");
+        })
+
+        uploader.init();
+        document.getElementById('privateImg').onclick = function(){
+            uploader.start();
+        }
+        // .on('click', function() {
+        //     //绑定文件上传的自定义变量
+        //     // $('#add-upload').attr("disabled",true);
+        //     uploader.start();
+        // });
 
         //图片消息
-        document.getElementById('privateImg').onclick = function () {
-            var tname = document.getElementById("toname").value;
-            var id = conn.getUniqueId();                   // 生成本地消息id
-            var msg = new WebIM.message('img', id);        // 创建图片消息
-            var input = document.getElementById('image');  // 选择图片的input
-            var file = WebIM.utils.getFileUrl(input);      // 将图片转化为二进制文件
-            var allowType = {
-                'jpg': true,
-                'gif': true,
-                'png': true,
-                'bmp': true
-            };
-            if (file.filetype.toLowerCase() in allowType) {
-                var option = {
-                    apiUrl: WebIMConfig.apiURL,
-                    file: file,
-                    to: tname,
-                    ext: {
-                        'time': myDate,
-                    },           // 接收消息对象
-                    roomType: false,
-                    chatType: 'singleChat',
-                    onFileUploadError: function () {      // 消息上传失败
-                        console.log('onFileUploadError');
-                    },
-                    onFileUploadComplete: function () {   // 消息上传成功
-                        console.log('onFileUploadComplete');
-                    },
-                    success: function () {                // 消息发送成功
-                        console.log('Success');
-                    },
-                    flashUpload: WebIM.flashUpload
-                };
-                msg.set(option);
-                conn.send(msg.body);
-            }
-        };
+        // document.getElementById('privateImg').onclick = function () {
+        //     var tname = document.getElementById("toname").value;
+        //     console.log(1);
+        //     var id = conn.getUniqueId();   
+        //     console.log(2);                // 生成本地消息id
+        //     var msg = new WebIM.message('img', id);        // 创建图片消息
+        //     console.log(3);
+        //     var input = document.getElementById('image');  // 选择图片的input
+        //     console.log(4);
+        //     var file = WebIM.utils.getFileUrl(input);      // 将图片转化为二进制文件
+        //     console.log(5);
+        //     // var allowType = {
+        //     //     'jpg': true,
+        //     //     'gif': true,
+        //     //     'png': true,
+        //     //     'bmp': true
+        //     // };
+        //     // if (file.filetype.toLowerCase() in allowType) {
+        //         console.log(6);
+        //         var option = {
+        //             selectBtn: 'image',
+        //             startBnt: document.getElementById('privateImg'),
+        //             apiUrl: WebIM.config.apiURL,
+        //             file: file,
+        //             to: tname,
+        //             ext: {
+        //                 'time': myDate,
+        //             },           // 接收消息对象
+        //             roomType: false,
+        //             chatType: 'singleChat',
+        //             onFileUploadError: function (message) {      // 消息上传失败
+        //                 console.log('onFileUploadError', message.type);
+        //             },
+        //             onFileUploadComplete: function () {   // 消息上传成功
+        //                 console.log('onFileUploadComplete');
+        //             },
+        //             success: function () {                // 消息发送成功
+        //                 console.log('Success');
+        //             },
+        //             // flashUpload: WebIM.flashUpload
+        //         };
+        //         console.log(7);
+        //         msg.set(option);
+        //         conn.send(msg.body);
+        //     // }
+        // };
 
         //音频消息
         document.getElementById("privateAudio").onclick = function () {
@@ -642,7 +701,7 @@
             };
             if (file.filetype.toLowerCase() in allowType) {
                 var option = {
-                    apiUrl: WebIMConfig.apiURL,
+                    apiUrl: WebIM.config.apiURL,
                     file: file,
                     to: tname,                       // 接收消息对象
                     ext: {
@@ -1304,29 +1363,29 @@
         //     console.log("呼叫：" + tname)
         // }
 
-        document.getElementById("rtCall").onclick = function () {
-            var tname = document.getElementById("toname").value;
+        // document.getElementById("rtCall").onclick = function () {
+        //     var tname = document.getElementById("toname").value;
 
-            rtcCall.caller = 'test3';
-            rtcCall.makeVideoCall(tname);
-            console.log("呼叫：" + tname)
+        //     rtcCall.caller = 'test3';
+        //     rtcCall.makeVideoCall(tname);
+        //     console.log("呼叫：" + tname)
 
-        };
-        // 关掉/拒绝视频
-        document.getElementById("rtEndCall").onclick = function () {
-            rtcCall.endCall();
-        }
-        // 接受对方呼叫
-        document.getElementById("rtAcceptCall").onclick = function () {
-            rtcCall.acceptCall();
-        }
-        // 语音呼叫对方
-        document.getElementById("rtAudioCall").onclick = function () {
-            var tname = document.getElementById("toname").value;
-            console.log('Audio Call');
-            rtcCall.caller = 'wenke123';
-            rtcCall.makeVoiceCall(tname);
-        };
+        // };
+        // // 关掉/拒绝视频
+        // document.getElementById("rtEndCall").onclick = function () {
+        //     rtcCall.endCall();
+        // }
+        // // 接受对方呼叫
+        // document.getElementById("rtAcceptCall").onclick = function () {
+        //     rtcCall.acceptCall();
+        // }
+        // // 语音呼叫对方
+        // document.getElementById("rtAudioCall").onclick = function () {
+        //     var tname = document.getElementById("toname").value;
+        //     console.log('Audio Call');
+        //     rtcCall.caller = 'wenke123';
+        //     rtcCall.makeVoiceCall(tname);
+        // };
     </script>
     <script>
         var resultCon = {}
@@ -1357,57 +1416,57 @@
         // }
 
         //创建会议
-        document.getElementById("createConfer").onclick = function () {
-            emedia.mgr.createConference(emedia.mgr.ConfrType.COMMUNICATION_MIX).then(function (confr) {
-                console.log("创建会议成功");
-                console.log(confr);
-                resultCon = confr;
-                emedia.mgr.joinConference(resultCon.confrId, resultCon.password, "加入").then(function (confr) {
-                    console.log("加入成功");
-                    emedia.mgr.shareVideoWithAudio({
-                    });
+        // document.getElementById("createConfer").onclick = function () {
+        //     emedia.mgr.createConference(emedia.mgr.ConfrType.COMMUNICATION_MIX).then(function (confr) {
+        //         console.log("创建会议成功");
+        //         console.log(confr);
+        //         resultCon = confr;
+        //         emedia.mgr.joinConference(resultCon.confrId, resultCon.password, "加入").then(function (confr) {
+        //             console.log("加入成功");
+        //             emedia.mgr.shareVideoWithAudio({
+        //             });
 
-                }).catch(function (error) {
-                    console.log("加入失败");
-                })
-            }).catch(function (error) {
-                console.log("创建会议失败");
-            })
-        }
-        document.getElementById("inviteUser").onclick = function () {
-            var uname = document.getElementById("name").value;
-            var tname = document.getElementById("toname").value;
-            var tmsg = document.getElementById("msg").value;
-            var id = conn.getUniqueId();            //生成本地消息id
-            var msg = new WebIM.message('cmd', id); //创建命令消息
-            msg.set({
-                msg: '邀请您加入会议' + result.confrId,
-                to: tname,                       //接收消息对象
-                action: 'action',                     //用户自定义，cmd消息必填
-                ext: {
-                    confrId: result.confrId,
-                    password: result.password,
-                    jid: WebIM.config.appkey + '_' + tname + '@' + WebIM.config.Host
-                },
-                success: function (id, serverMsgId) {
-                    console.log('send private cmd Success');
-                },
-                fail: function (e) {
-                    console.log("Send private cmd error");
-                }
-            })
+        //         }).catch(function (error) {
+        //             console.log("加入失败");
+        //         })
+        //     }).catch(function (error) {
+        //         console.log("创建会议失败");
+        //     })
+        // }
+        // document.getElementById("inviteUser").onclick = function () {
+        //     var uname = document.getElementById("name").value;
+        //     var tname = document.getElementById("toname").value;
+        //     var tmsg = document.getElementById("msg").value;
+        //     var id = conn.getUniqueId();            //生成本地消息id
+        //     var msg = new WebIM.message('cmd', id); //创建命令消息
+        //     msg.set({
+        //         msg: '邀请您加入会议' + result.confrId,
+        //         to: tname,                       //接收消息对象
+        //         action: 'action',                     //用户自定义，cmd消息必填
+        //         ext: {
+        //             confrId: result.confrId,
+        //             password: result.password,
+        //             jid: WebIM.config.appkey + '_' + tname + '@' + WebIM.config.Host
+        //         },
+        //         success: function (id, serverMsgId) {
+        //             console.log('send private cmd Success');
+        //         },
+        //         fail: function (e) {
+        //             console.log("Send private cmd error");
+        //         }
+        //     })
 
-            msg.body.chatType = 'singleChat';
-            conn.send(msg.body);
-        }
+        //     msg.body.chatType = 'singleChat';
+        //     conn.send(msg.body);
+        // }
 
-        //挂断视频
-        document.getElementById("endConVideo").onclick = function () {
-            var rtn = confirm("确定退出会议吗？");
-            if (rtn) {
-                emedia.mgr.exit();
-            }
-        }
+        // //挂断视频
+        // document.getElementById("endConVideo").onclick = function () {
+        //     var rtn = confirm("确定退出会议吗？");
+        //     if (rtn) {
+        //         emedia.mgr.exit();
+        //     }
+        // }
 
     </script>
 

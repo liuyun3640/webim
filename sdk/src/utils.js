@@ -1,6 +1,9 @@
+
+    var plupload = require("plupload");
     var EMPTYFN = function () {
     };
     import getCode from './status';
+    // import plupload from '../plupload';
     const _code = getCode();
     var WEBIM_FILESIZE_LIMIT = 10485760;
 
@@ -435,6 +438,40 @@
             options.onFileUploadCanceled = options.onFileUploadCanceled || EMPTYFN;
 
             var acc = options.accessToken || this.context.accessToken;
+//             var apiUrl = options.apiUrl;
+//              var orgName, appName, devInfos;
+//             var appKey = options.appKey || this.context.appKey || '';
+
+//             if (appKey) {
+//                 devInfos = appKey.split('#');
+//                 orgName = devInfos[0];
+//                 appName = devInfos[1];
+//             }
+//             var uploadUrl = apiUrl + '/' + orgName + '/' + appName + '/chatfiles';
+//             var uploader = new plupload.Uploader({
+//                 browse_button : options.selectBtn,
+// //                  runtimes : 'html5,flash,html4',
+//                 url : apiUrl,
+//                 // flash_swf_url,silverlight_xap_url路径要写全，否则会在IE下出现问题（无法打开选择文件窗口）
+//                 flash_swf_url : './dist/Moxie.swf',
+//                 silverlight_xap_url :'./dist/Moxie.xap',
+//             });
+//             uploader.bind('FilesAdded', function(uploader, files) {
+//                 console.log(files);
+//             });
+
+//             uploader.bind('FileUploaded', function(uploader, files, responseObject) {
+//                 console.log(responseObject);
+//             })
+
+//             uploader.init();
+//             options.startBnt.on('click', function() {
+//                 //绑定文件上传的自定义变量
+//                 // $('#add-upload').attr("disabled",true);
+//                 uploader.start();
+//             });
+
+
             if (!acc) {
                 options.onFileUploadError({
                     type: _code.WEBIM_UPLOADFILE_NO_LOGIN

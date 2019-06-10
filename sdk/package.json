@@ -20,6 +20,7 @@
   "dependencies": {
     "Base64": "^1.0.2",
     "long": "^4.0.0",
+    "plupload": "^2.3.6",
     "protobufjs": "^6.8.8",
     "sockjs-client": "^1.1.5"
   },
